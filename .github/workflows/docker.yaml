@@ -29,10 +29,6 @@ on:
           type=semver,pattern={{major}}.{{minor}}
           type=sha
           type=sha,format=long
-    outputs:
-      image_name:
-        description: 'The built image name'
-        value: ${{ inputs.image }}
   
 jobs:
   build:
