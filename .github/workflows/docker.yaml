@@ -1,0 +1,72 @@
+name: Docker Build
+run-name: ${{ github.actor }} run Actions
+
+on:
+  workflow_call:
+    secrets:
+      REGISTERY_USER:
+        required: true
+        description: 'Username for Docker registry'
+      REGISTERY_PASSWORD:
+        required: true
+        description: 'Password for Docker registry'
+    inputs:
+      Dockerfile:
+        required: false
+        type: string
+        default: ./Dockerfile
+      registry:
+        required: false
+        type: string
+        default: ${{ vars.REGISTERY_ADDRESS }}
+      tags:
+        required: false
+        type: string
+        default: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha
+          type=sha,format=long
+    outputs:
+      image_name:
+        description: 'The built image name'
+        value: ${{ inputs.image }}
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: rlespinasse/github-slug-action@v5
+        id: slug
+      - name: debug info
+        run: |
+          printenv
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v2
+      - uses: docker/login-action@v2
+        with:
+          registry:  ${{ inputs.registry }}
+          username: ${{ secrets.REGISTERY_USER }}
+          password: ${{ secrets.REGISTERY_PASSWORD }}
+      - name: echo image name
+        run: echo "Image name is ${{ inputs.registry }}/${GITHUB_REPOSITORY_OWNER_PART_SLUG_CS}/${GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS}"
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ inputs.registry }}/${GITHUB_REPOSITORY_OWNER_PART_SLUG_CS}/${GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS}
+          tags:  ${{ inputs.tags }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6   
+        with:
+          context: .
+          file: ${{ inputs.Dockerfile }}
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
