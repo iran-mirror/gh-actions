@@ -15,7 +15,7 @@ on:
         default: true
         type: boolean
       debug:
-        description: 'Enable debug mode for ArgoCD deployment'
+        description: 'Enable debug mode'
         required: false
         default: true
         type: boolean
