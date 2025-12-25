@@ -1,0 +1,14 @@
+name: ArgoCD Deployment
+run-name: ${{ github.actor }} run Actions 🚀
+
+on:
+  - push
+
+jobs:
+  argocd:
+    uses: ./.github/workflows/argocd.yaml
+    with:
+      debug: true
+    secrets:
+      ARGOCD_GIT_TOKEN: ${{ secrets.ARGOCD_GIT_TOKEN }}
+  

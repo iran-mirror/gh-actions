@@ -1,1 +1,4 @@
 .act
+.vars
+.secrets
+.env

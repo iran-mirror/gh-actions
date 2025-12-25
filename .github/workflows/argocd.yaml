@@ -1,0 +1,150 @@
+name: Docker Build
+run-name: ${{ github.actor }} run Actions
+
+on:
+  workflow_call:
+    secrets:
+      ARGOCD_GIT_TOKEN:
+        required: true
+        description: 'Token for ArgoCD Git access'
+    inputs:
+      registry:
+        required: false
+        type: string
+        default: ${{ vars.REGISTERY_ADDRESS }}
+      debug:
+        required: false
+        type: boolean
+        default: false
+      argocd_repo_url:
+        required: false
+        type: string
+        default: ${{ github.repository_owner }}/argocd
+      readme: 
+        required: false
+        type: string
+        default: |
+          # ${{ github.repository }} - ${{ github.ref_name }}
+          
+          This directory contains the ArgoCD manifests for the ${{ github.repository }} repository on the ${{ github.ref_name }} branch.
+          
+          ## Repository Information
+          - Repository: ${{ github.repository }}
+          - Branch: ${{ github.ref_name }}
+          - URL: https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: rlespinasse/github-slug-action@v5
+        id: slug
+    
+      - name: checkout argocd repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.argocd_repo_url }}
+          token: ${{ secrets.ARGOCD_GIT_TOKEN }}
+      - uses: imranismail/setup-kustomize@v2
+        with:
+          kustomize-version: '5.7.1'
+
+      - name: debug info
+        if: ${{ inputs.debug }}
+        run: |
+          echo "Repo URL is ${{ inputs.argocd_repo_url }}"
+          printenv
+      - name: Create path if not exists
+        run: |
+          set -e
+          set -x # enable debugging
+          printenv
+          # check if org exists
+          if [ -d "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}" ]; then
+            echo "Org directory exists"
+          else
+            echo "Org directory does not exist, creating..."
+            mkdir -p "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+          fi
+          cd "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+          # check if README.md exists
+          if [ -f "README.md" ]; then
+            echo "README.md file exists"
+          else
+            echo "README.md file does not exist, creating..."
+            echo "${{ inputs.readme }}" > README.md
+          fi
+
+          # check if path exists
+          if [ -d "./services" ]; then
+            echo "Path exists"
+          else
+            echo "Path does not exist, creating..."
+            mkdir -p "./services"
+            touch "./services/.gitkeep"
+          fi
+      - name: list files
+        if : ${{ inputs.debug }}
+        run: ls -laR ./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}
+
+      - name: kustomize set image
+        run: |
+          set -e
+          if ${{ inputs.debug }}; then
+            set -x # enable debugging
+            printenv
+          fi
+
+          cd "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+
+          echo "${{ inputs.readme }}" > README.md
+          echo "# Deployed image info" >> README.md
+          echo "Updating image to ${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_CS }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}:sha-${{ github.sha }}" >> README.md
+          echo "" >> README.md
+          echo "Last updated at $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> README.md
+          echo "" >> README.md
+          echo "commit: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}" >> README.md
+
+          if [ -f "kustomization.yaml" ]; then
+            echo "kustomization.yaml file exists, updating image..."
+          else
+            echo "kustomization.yaml file does not exist, creating..."
+            kustomize create  . 
+          fi
+
+          kustomize edit set image ${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_CS }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}:latest=${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_CS }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}:sha-${{ github.sha }}
+          kustomize edit set namespace ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}-${{ env.GITHUB_REF_SLUG }}
+          kustomize edit add annotation deployed-by "github-actions[bot]"
+          kustomize edit add annotation commit-sha "${{ github.sha }}"
+          kustomize edit add annotation branch "${{ github.ref_name }}"
+          kustomize edit add annotation repository "${{ github.repository }}"
+          kustomize edit add annotation commit-origin  ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+
+      - name: kustomize  debug
+        if: ${{ inputs.debug }}
+        run: |
+          set -e
+          set -x # enable debugging
+          cd "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+          cat README.md
+          cat kustomization.yaml
+      - name: Commit and push changes
+        run: |
+          set -e
+          if ${{ inputs.debug }}; then
+            set -x # enable debugging
+            printenv
+          fi
+          cd "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Update ArgoCD manifests by ${{ github.actor }}" -m "Repository: ${{ github.repository }}
+                Actor: ${{ github.actor }}
+                Commit: ${{ github.sha }}
+                Branch: ${{ github.ref_name }}" \
+            || echo "No changes to commit"
+
+
+          git push origin HEAD:${{ github.ref_name }} || echo "No changes to push"
