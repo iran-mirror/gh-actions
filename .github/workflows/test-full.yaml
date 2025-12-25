@@ -25,7 +25,7 @@ jobs:
     if: ${{ github.event.inputs.run-docker }}
     uses: ./.github/workflows/docker.yaml
     with:
-      debug: ${{ github.event.inputs.debug }}
+      debug: true
       registry: ${{ vars.REGISTERY_ADDRESS }}
     secrets:
       REGISTERY_USER: ${{ secrets.REGISTERY_USER }}
@@ -35,7 +35,8 @@ jobs:
     uses: ./.github/workflows/argocd.yaml
     needs: docker
     with:
-      debug: ${{ github.event.inputs.debug }}
+      debug: true
+      registry: ${{ vars.REGISTERY_ADDRESS }}
     secrets:
       ARGOCD_GIT_TOKEN: ${{ secrets.ARGOCD_GIT_TOKEN }}
   
