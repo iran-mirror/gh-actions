@@ -115,11 +115,11 @@ jobs:
 
           kustomize edit set image ${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_CS }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}:latest=${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_CS }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}:sha-${{ github.sha }}
           kustomize edit set namespace ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}-${{ env.GITHUB_REF_SLUG }}
-          kustomize edit set annotation deployed-by "github-actions[bot]"
-          kustomize edit set annotation commit-sha "${{ github.sha }}"
-          kustomize edit set annotation branch "${{ github.ref_name }}"
-          kustomize edit set annotation repository "${{ github.repository }}"
-          kustomize edit set annotation commit-origin  ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+          kustomize edit set annotation \
+             app.io/version:"${{ github.sha }}" \
+              app.io/branch:"${{ github.ref_name }}" \
+              app.io/repository:"${{ github.repository }}" \
+              app.io/commit-origin:"${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
       - name: kustomize  debug
         if: ${{ inputs.debug }}
         run: |
