@@ -54,7 +54,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ inputs.registry }}/${GITHUB_REPOSITORY_OWNER_PART_SLUG_CS}/${GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS}
+          images: ${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_CS }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}
           tags:  ${{ inputs.tags }}
       - name: Build and push Docker image
         uses: docker/build-push-action@v6   
