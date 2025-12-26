@@ -100,7 +100,7 @@ jobs:
 
           echo "${{ inputs.readme }}" > README.md
           echo "# Deployed image info" >> README.md
-          echo "Updating image to ${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_CS }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}:sha-${{ github.sha }}" >> README.md
+          echo "Updating image to ${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}:sha-${{ github.sha }}" >> README.md
           echo "" >> README.md
           echo "Last updated at $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> README.md
           echo "" >> README.md
@@ -113,8 +113,8 @@ jobs:
             kustomize create  . 
           fi
 
-          kustomize edit set image ${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_CS }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}:latest=${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_CS }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}:sha-${{ github.sha }}
-          kustomize edit set namespace ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL_CS }}-${{ env.GITHUB_REF_SLUG }}
+          kustomize edit set image ${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}:latest=${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}:sha-${{ github.sha }}
+          kustomize edit set namespace ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ env.GITHUB_REF_SLUG }}
           kustomize edit set annotation \
              app.io/version:"${{ github.sha }}" \
               app.io/branch:"${{ github.ref_name }}" \
