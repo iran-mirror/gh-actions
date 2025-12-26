@@ -61,13 +61,13 @@ jobs:
           set -x # enable debugging
           printenv
           # check if org exists
-          if [ -d "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}" ]; then
+          if [ -d "./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}" ]; then
             echo "Org directory exists"
           else
             echo "Org directory does not exist, creating..."
-            mkdir -p "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+            mkdir -p "./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}"
           fi
-          cd "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+          cd "./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}"
           # check if README.md exists
           if [ -f "README.md" ]; then
             echo "README.md file exists"
@@ -86,7 +86,7 @@ jobs:
           fi
       - name: list files
         if : ${{ inputs.debug }}
-        run: ls -laR ./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}
+        run: ls -laR ./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}
 
       - name: kustomize set image
         run: |
@@ -96,7 +96,7 @@ jobs:
             printenv
           fi
 
-          cd "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+          cd "./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}"
 
           echo "${{ inputs.readme }}" > README.md
           echo "# Deployed image info" >> README.md
@@ -114,7 +114,6 @@ jobs:
           fi
 
           kustomize edit set image ${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}:latest=${{ inputs.registry }}/${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}:sha-${{ github.sha }}
-          kustomize edit set namespace ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ env.GITHUB_REF_SLUG }}
           kustomize edit set annotation \
              app.io/version:"${{ github.sha }}" \
               app.io/branch:"${{ github.ref_name }}" \
@@ -125,7 +124,7 @@ jobs:
         run: |
           set -e
           set -x # enable debugging
-          cd "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+          cd "./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}"
           cat README.md
           cat kustomization.yaml
       - name: Commit and push changes
@@ -135,7 +134,7 @@ jobs:
             set -x # enable debugging
             printenv
           fi
-          cd "./manifests/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}/${{env.GITHUB_REF_SLUG}}"
+          cd "./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}"
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
