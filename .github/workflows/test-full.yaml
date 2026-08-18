@@ -38,5 +38,5 @@ jobs:
       debug: true
       registry: ${{ vars.REGISTERY_ADDRESS }}
     secrets:
-      ARGOCD_GIT_TOKEN: ${{ secrets.ARGOCD_GIT_TOKEN }}
+      ARGOCD_GIT_SSH_KEY: ${{ secrets.ARGOCD_GIT_SSH_KEY }}
   

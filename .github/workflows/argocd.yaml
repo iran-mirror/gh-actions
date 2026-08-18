@@ -160,6 +160,4 @@ jobs:
                 Commit: ${{ github.sha }}
                 Branch: ${{ github.ref_name }}" \
             || echo "No changes to commit"
-
-
           git push origin main || echo "No changes to push"
