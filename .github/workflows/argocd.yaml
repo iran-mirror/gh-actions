@@ -4,9 +4,12 @@ run-name: ${{ github.actor }} run Actions
 on:
   workflow_call:
     secrets:
-      ARGOCD_GIT_TOKEN:
+      # ARGOCD_GIT_TOKEN:
+      #   required: false
+      #   description: 'Token for ArgoCD Git access'
+      ARGOCD_GIT_SSH_KEY:
         required: true
-        description: 'Token for ArgoCD Git access'
+        description: 'SSH key for ArgoCD Git access'
     inputs:
       registry:
         required: false
@@ -40,13 +43,20 @@ jobs:
 
       - uses: rlespinasse/github-slug-action@v5
         id: slug
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.ARGOCD_GIT_SSH_KEY }} 
     
       - name: checkout argocd repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.argocd_repo_url }}
-          token: ${{ secrets.ARGOCD_GIT_TOKEN }}
-      - uses: imranismail/setup-kustomize@v2
+          ssh-key: ${{ secrets.ARGOCD_GIT_SSH_KEY }}
+          persist-credentials: true
+          
+      - uses: imranismail/setup-kustomize@v3
         with:
           kustomize-version: '5.7.1'
 
@@ -55,11 +65,17 @@ jobs:
         run: |
           echo "Repo URL is ${{ inputs.argocd_repo_url }}"
           printenv
+        background: true
+        continue-on-error: true
+
+
       - name: Create path if not exists
         run: |
           set -e
-          set -x # enable debugging
-          printenv
+          if ${{ inputs.debug }}; then
+            set -x # enable debugging
+            printenv
+          fi
           # check if org exists
           if [ -d "./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}" ]; then
             echo "Org directory exists"
@@ -85,8 +101,9 @@ jobs:
             touch "./services/.gitkeep"
           fi
       - name: list files
-        if : ${{ inputs.debug }}
-        run: ls -laR ./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}
+        if: ${{ inputs.debug }}
+        run: |
+          ls -laR ./manifests/${{env.GITHUB_REF_SLUG}}/${{env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL}}
 
       - name: kustomize set image
         run: |
@@ -143,6 +160,4 @@ jobs:
                 Commit: ${{ github.sha }}
                 Branch: ${{ github.ref_name }}" \
             || echo "No changes to commit"
-
-
           git push origin main || echo "No changes to push"
